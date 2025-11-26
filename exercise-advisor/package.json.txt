@@ -1,0 +1,15 @@
+{
+  "name": "exercise-advisor",
+  "version": "1.0.0",
+  "description": "AI-powered calorie and exercise advisor",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0"
+  },
+  "devDependencies": {
+    "vercel": "^28.0.0"
+  }
+}

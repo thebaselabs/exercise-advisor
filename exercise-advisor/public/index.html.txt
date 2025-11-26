@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Calorie & Exercise Advisor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #4285f4;
+            --accent-color: #22c55e;
+            --gradient-primary: linear-gradient(90deg, #ff7a18, #ffb36a);
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --text-light: #f9fafb;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8f9fa;
+            --bg-gradient: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            --border-color: #e5e7eb;
+            --radius-sm: 4px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --transition: all 0.2s ease;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --text-primary: #f9fafb;
+                --text-secondary: #d1d5db;
+                --bg-primary: #1f2937;
+                --bg-secondary: #111827;
+                --bg-gradient: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+                --border-color: #4b5563;
+            }
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .calorie-advisor {
+            font-family: Inter, Arial, sans-serif;
+            width: 100%;
+            margin: 0 auto;
+            color: var(--text-primary);
+            background: var(--bg-primary);
+            padding: 8px 12px;
+            border-radius: var(--radius-lg);
+            max-width: 100%;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .calorie-advisor .top {
+            text-align: center;
+            margin-bottom: 16px;
+            width: 100%;
+        }
+
+        .calorie-advisor .title {
+            font-size: clamp(20px, 5vw, 28px);
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 8px 0 12px;
+            font-family: 'Poppins', 'Inter', sans-serif;
+            line-height: 1.2;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .calorie-advisor .title .smart {
+            color: var(--accent-color);
+        }
+
+        .calorie-advisor .subtitle {
+            color: var(--text-secondary);
+            margin: 0 0 16px;
+            font-size: clamp(13px, 3vw, 14px);
+            line-height: 1.5;
+            padding: 0 4px;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+
+        .calorie-advisor .panel {
+            background: var(--bg-primary);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 16px;
+            width: 100%;
+            box-sizing: border-box;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .calorie-advisor .form-grid {
+            display: grid;
+            gap: 16px;
+            width: 100%;
+        }
+
+        .calorie-advisor .form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .calorie-advisor .form-group {
+            width: 100%;
+            min-width: 0;
+            box-sizing: border-box;
+        }
+
+        .calorie-advisor label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .calorie-advisor input[type="text"],
+        .calorie-advisor input[type="number"],
+        .calorie-advisor select,
+        .calorie-advisor textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            font-size: 16px;
+            outline: none;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: var(--transition);
+            -webkit-appearance: none;
+            box-sizing: border-box;
+            max-width: 100%;
+            min-height: 52px;
+        }
+
+        .calorie-advisor input[type="text"]:focus,
+        .calorie-advisor input[type="number"]:focus,
+        .calorie-advisor select:focus,
+        .calorie-advisor textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.1);
+        }
+
+        .calorie-advisor .btn {
+            background: var(--gradient-primary);
+            color: #04121a;
+            border: 0;
+            padding: 16px 20px;
+            border-radius: var(--radius-md);
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 16px;
+            min-height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            transition: var(--transition);
+            text-decoration: none;
+            position: relative;
+            overflow: hidden;
+            box-sizing: border-box;
+            max-width: 100%;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .calorie-advisor .btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .calorie-advisor .btn:hover::after,
+        .calorie-advisor .btn:focus::after {
+            opacity: 1;
+        }
+
+        .calorie-advisor .btn:hover,
+        .calorie-advisor .btn:focus {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .calorie-advisor .btn:active {
+            transform: translateY(0);
+        }
+
+        .calorie-advisor .btn.ghost {
+            background: transparent;
+            border: 2px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 14px 18px;
+        }
+
+        .calorie-advisor .btn.ghost:hover,
+        .calorie-advisor .btn.ghost:focus {
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+            background: rgba(66, 133, 244, 0.05);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons .btn {
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .calorie-advisor .food-list-container {
+            width: 100%;
+            margin: 16px 0;
+            padding: 0;
+            overflow: hidden;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+        }
+
+        .calorie-advisor .food-list {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-primary);
+        }
+
+        .calorie-advisor .food-list thead {
+            background: var(--bg-secondary);
+        }
+
+        .calorie-advisor .food-list th {
+            padding: 16px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text-primary);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .calorie-advisor .food-list td {
+            padding: 16px 12px;
+            text-align: left;
+            font-size: 14px;
+            border-bottom: 1px solid var(--border-color);
+            vertical-align: middle;
+        }
+
+        .calorie-advisor .food-list tr:last-child td {
+            border-bottom: none;
+        }
+
+        .calorie-advisor .food-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .calorie-advisor .food-actions .btn {
+            min-width: auto;
+            padding: 10px 16px;
+            font-size: 14px;
+            min-height: 40px;
+            width: auto;
+            flex: none;
+        }
+
+        .calorie-advisor .result-total {
+            margin-top: 20px;
+            font-weight: 800;
+            font-size: clamp(18px, 4vw, 22px);
+            color: var(--text-primary);
+            text-align: center;
+            padding: 20px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 0;
+        }
+
+        .calorie-advisor .note {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 12px;
+            line-height: 1.5;
+            width: 100%;
+            padding: 0;
+        }
+
+        .user-inputs-grid {
+            display: grid;
+            gap: 16px;
+            width: 100%;
+        }
+
+        .user-inputs-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            width: 100%;
+            align-items: end;
+        }
+
+        .user-inputs-row > div {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .user-inputs-row .action-buttons {
+            margin-left: auto;
+            flex: none;
+            min-width: 200px;
+        }
+
+        .calorie-advisor .ex-section {
+            margin-top: 24px;
+            width: 100%;
+        }
+
+        .calorie-advisor .ex-category {
+            margin-bottom: 24px;
+            width: 100%;
+        }
+
+        .calorie-advisor .ex-category-title {
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .calorie-advisor .ex-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
+            gap: 16px;
+            width: 100%;
+            flex-wrap: wrap;
+        }
+
+        .calorie-advisor .ex-item:last-child {
+            border-bottom: none;
+        }
+
+        .calorie-advisor .ex-item > div:first-child {
+            flex: 1;
+            font-weight: 500;
+            min-width: 0;
+            word-wrap: break-word;
+            font-size: 15px;
+        }
+
+        .calorie-advisor .ex-item > div:last-child {
+            color: var(--text-secondary);
+            font-size: 14px;
+            white-space: nowrap;
+            flex-shrink: 0;
+            font-weight: 600;
+        }
+
+        .ai-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .ai-badge {
+            background: var(--accent-color);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: var(--radius-md);
+            margin: 8px 0;
+            font-size: 14px;
+            border: 1px solid #fecaca;
+        }
+
+        /* New Tab Styles */
+        .exercise-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border-color);
+            flex-wrap: wrap;
+        }
+
+        .exercise-tab {
+            padding: 12px 20px;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-bottom: none;
+            border-radius: var(--radius-md) var(--radius-md) 0 0;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .exercise-tab.active {
+            background: var(--bg-primary);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .exercise-tab-content {
+            display: none;
+        }
+
+        .exercise-tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+            
+            .calorie-advisor {
+                padding: 12px;
+            }
+            
+            .calorie-advisor .panel {
+                padding: 16px;
+            }
+            
+            .calorie-advisor .food-list thead {
+                display: none;
+            }
+            
+            .calorie-advisor .food-list tbody {
+                display: block;
+            }
+            
+            .calorie-advisor .food-list tr {
+                display: block;
+                margin-bottom: 12px;
+                padding: 16px;
+                border: 1px solid var(--border-color);
+                border-radius: var(--radius-md);
+                background: var(--bg-primary);
+            }
+            
+            .calorie-advisor .food-list td {
+                display: block;
+                padding: 8px 0;
+                text-align: left;
+                font-size: 14px;
+                border: none;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            
+            .calorie-advisor .food-list td:before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: var(--text-primary);
+                display: inline-block;
+                min-width: 80px;
+                margin-right: 8px;
+            }
+            
+            .calorie-advisor .food-actions {
+                justify-content: flex-start;
+                margin-top: 12px;
+            }
+            
+            .calorie-advisor .food-actions .btn {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .action-buttons .btn {
+                min-width: 100%;
+                flex: none;
+            }
+            
+            .user-inputs-row {
+                flex-direction: column;
+                gap: 12px;
+            }
+            
+            .user-inputs-row > div {
+                width: 100%;
+                min-width: 0;
+            }
+            
+            .user-inputs-row .action-buttons {
+                margin-left: 0;
+                width: 100%;
+                min-width: 0;
+            }
+
+            .exercise-tabs {
+                flex-direction: column;
+                border-bottom: none;
+            }
+
+            .exercise-tab {
+                border-radius: var(--radius-md);
+                border: 1px solid var(--border-color);
+                margin-bottom: 8px;
+            }
+
+            .exercise-tab.active {
+                border-color: var(--primary-color);
+            }
+        }
+
+        @media (min-width: 481px) and (max-width: 768px) {
+            .calorie-advisor .form-row {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            
+            .calorie-advisor .form-group {
+                flex: 1 1 calc(50% - 8px);
+                min-width: 140px;
+            }
+            
+            .calorie-advisor .form-group:last-child {
+                flex-basis: 100%;
+                margin-top: 8px;
+            }
+
+            .exercise-tabs {
+                flex-wrap: wrap;
+            }
+
+            .exercise-tab {
+                flex: 1;
+                min-width: 120px;
+                text-align: center;
+                justify-content: center;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .calorie-advisor .form-row {
+                flex-direction: row;
+                gap: 20px;
+            }
+            
+            .calorie-advisor .form-group {
+                flex: 1;
+            }
+
+            .exercise-tabs {
+                justify-content: center;
+            }
+
+            .exercise-tab {
+                min-width: 140px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="calorie-advisor">
+            <div class="top panel">
+                <div>
+                    <div class="title"><span class="smart">AI-Powered</span> Calorie & Exercise Advisor</div>
+                    <div class="subtitle">Track your food intake and get personalized exercise recommendations tailored to your goals.</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="form-grid">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="food-input">Dish / Food / Drink <span class="ai-badge">AI</span></label>
+                            <input aria-describedby="food-input-help" autocomplete="off" id="food-input" placeholder="e.g. apple, chicken breast, latte" type="text"/>
+                            <div class="note" id="food-input-help">AI will calculate calories based on your description</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="qty-input">Quantity</label>
+                            <input id="qty-input" min="0.1" step="0.1" type="number" value="1"/>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="unit-select">Unit</label>
+                            <select id="unit-select">
+                                <option value="g">grams (g)</option>
+                                <option value="kg">kilograms (kg)</option>
+                                <option value="cup">cup</option>
+                                <option value="bowl">bowl</option>
+                                <option value="plate">plate</option>
+                                <option value="piece">piece</option>
+                                <option value="slice">slice</option>
+                                <option value="serving">serving</option>
+                                <option value="custom">Custom kcal/unit</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label>&#160;</label>
+                            <button aria-label="Add food item" class="btn" id="add-food">Add Item</button>
+                        </div>
+                    </div>
+
+                    <div id="custom-kcal-row" style="display: none; margin-top: 12px;">
+                        <label for="custom-kcal">Custom calories per unit</label>
+                        <input id="custom-kcal" min="0" placeholder="Enter calories per unit (e.g. 150)" type="number"/>
+                    </div>
+
+                    <div id="food-items-section" style="margin-top: 16px; display: none;">
+                        <label style="margin-bottom: 8px; font-weight: 600;">Your Food Items</label>
+                        <div class="food-list-container">
+                            <table aria-label="Food list" class="food-list" id="food-list-table" role="table">
+                                <thead>
+                                    <tr role="row">
+                                        <th role="columnheader">Item</th>
+                                        <th role="columnheader">Qty</th>
+                                        <th role="columnheader">Unit</th>
+                                        <th role="columnheader">Calories <span class="ai-badge">AI</span></th>
+                                        <th role="columnheader">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="food-list-body" role="rowgroup"></tbody>
+                            </table>
+                        </div>
+                        <div aria-live="polite" class="result-total" id="total-kcal" role="status">Total: 0 kcal</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="user-inputs-grid">
+                    <div class="user-inputs-row">
+                        <div>
+                            <label for="gender">Gender</label>
+                            <select id="gender">
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="age">Age</label>
+                            <input id="age" max="100" min="1" type="number" value="25"/>
+                        </div>
+
+                        <div>
+                            <label for="weight">Weight (kg)</label>
+                            <input id="weight" min="30" max="200" type="number" value="70" placeholder="Enter weight"/>
+                        </div>
+
+                        <div>
+                            <label for="activity">Activity Level</label>
+                            <select id="activity">
+                                <option value="sedentary">Sedentary (little/no exercise)</option>
+                                <option value="light">Light (1-2 days/week)</option>
+                                <option selected="selected" value="moderate">Moderate (3-4 days/week)</option>
+                                <option value="active">Active (5-6 days/week)</option>
+                                <option value="athlete">Athlete (daily exercise)</option>
+                            </select>
+                        </div>
+
+                        <div class="action-buttons">
+                            <button class="btn" id="calc-btn">Calculate Exercise <span class="ai-badge">AI</span></button>
+                            <button class="btn ghost" id="clear-btn">Clear All</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-area" style="display: none;">
+                <div class="panel">
+                    <div aria-level="2" class="result-total" id="result-header" role="heading">Total Calories: 0 kcal - AI Personalized Plan</div>
+                    <div class="note">AI-generated exercise recommendations based on your calorie intake, weight, and profile</div>
+                    
+                    <!-- Exercise Tabs -->
+                    <div class="exercise-tabs" id="exercise-tabs">
+                        <div class="exercise-tab active" data-tab="home">
+                            🏠 Home Workouts
+                        </div>
+                        <div class="exercise-tab" data-tab="outdoor">
+                            🏞️ Outdoor Workouts
+                        </div>
+                        <div class="exercise-tab" data-tab="gym">
+                            💪 Gym Workouts
+                        </div>
+                    </div>
+
+                    <!-- Tab Contents -->
+                    <div class="exercise-tab-content active" id="home-tab">
+                        <div class="ex-section" id="home-exercises"></div>
+                    </div>
+                    
+                    <div class="exercise-tab-content" id="outdoor-tab">
+                        <div class="ex-section" id="outdoor-exercises"></div>
+                    </div>
+                    
+                    <div class="exercise-tab-content" id="gym-tab">
+                        <div class="ex-section" id="gym-exercises"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="note panel" style="font-size: 13px; background: var(--bg-secondary); box-shadow: none;">
+                <strong>Important Note:</strong> This tool uses AI-powered calorie calculations and exercise recommendations. All data is processed securely through our protected API endpoints. Consult with healthcare professionals for personalized medical advice.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // AI-Powered Calorie Advisor JavaScript - SECURE VERSION
+        (function(){
+            'use strict';
+            
+            // 🔧 CONFIGURATION - This will automatically use the current domain for API calls
+            const VERCEL_APP_URL = window.location.origin;
+            
+            let items = [];
+            const elements = {
+                foodInput: document.getElementById('food-input'),
+                qtyInput: document.getElementById('qty-input'),
+                unitSelect: document.getElementById('unit-select'),
+                addBtn: document.getElementById('add-food'),
+                customKcalRow: document.getElementById('custom-kcal-row'),
+                customKcal: document.getElementById('custom-kcal'),
+                listBody: document.getElementById('food-list-body'),
+                totalKcalEl: document.getElementById('total-kcal'),
+                calcBtn: document.getElementById('calc-btn'),
+                clearBtn: document.getElementById('clear-btn'),
+                resultsArea: document.getElementById('results-area'),
+                resultHeader: document.getElementById('result-header'),
+                exerciseTabs: document.getElementById('exercise-tabs'),
+                homeExercises: document.getElementById('home-exercises'),
+                outdoorExercises: document.getElementById('outdoor-exercises'),
+                gymExercises: document.getElementById('gym-exercises')
+            };
+
+            function initApp() {
+                setupEventListeners();
+                renderList();
+            }
+
+            function setupEventListeners() {
+                elements.unitSelect.addEventListener('change', handleUnitChange);
+                elements.addBtn.addEventListener('click', addFoodItem);
+                elements.listBody.addEventListener('click', handleFoodActions);
+                elements.clearBtn.addEventListener('click', clearAll);
+                elements.calcBtn.addEventListener('click', calculateExercise);
+                elements.foodInput.addEventListener('keydown', handleFoodInputKeydown);
+                elements.exerciseTabs.addEventListener('click', handleExerciseTabClick);
+            }
+
+            function handleUnitChange() {
+                if(elements.unitSelect.value === 'custom') {
+                    elements.customKcalRow.style.display = 'block';
+                } else { 
+                    elements.customKcalRow.style.display = 'none'; 
+                    elements.customKcal.value = ''; 
+                }
+            }
+
+            function handleExerciseTabClick(e) {
+                if (e.target.classList.contains('exercise-tab')) {
+                    // Remove active class from all tabs
+                    document.querySelectorAll('.exercise-tab').forEach(tab => {
+                        tab.classList.remove('active');
+                    });
+                    
+                    // Add active class to clicked tab
+                    e.target.classList.add('active');
+                    
+                    // Hide all tab contents
+                    document.querySelectorAll('.exercise-tab-content').forEach(content => {
+                        content.classList.remove('active');
+                    });
+                    
+                    // Show selected tab content
+                    const tabId = e.target.dataset.tab + '-tab';
+                    document.getElementById(tabId).classList.add('active');
+                }
+            }
+
+            // SECURE AI CALORIE CALCULATION - Uses your Vercel API
+            async function calculateCaloriesWithAI(foodName, quantity, unit) {
+                console.log('🔍 AI Calculating calories for:', foodName, quantity, unit);
+                
+                try {
+                    const response = await fetch(`${VERCEL_APP_URL}/api/analyze`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            type: 'calories',
+                            data: { foodName, quantity, unit }
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`API error: ${response.status} - ${errorData.error || 'Unknown error'}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (typeof data.calories !== 'number') {
+                        throw new Error('Invalid response format from API');
+                    }
+                    
+                    console.log('✅ AI calculated calories:', data.calories);
+                    return data.calories;
+                    
+                } catch (error) {
+                    console.error('❌ AI calorie calculation failed:', error);
+                    throw error;
+                }
+            }
+
+            // SECURE AI EXERCISE PLANNING - Uses your Vercel API
+            async function getAIExercisePlan(totalCalories, gender, age, weight, activity) {
+                console.log('🏃 AI Generating exercise plan for:', totalCalories, 'kcal');
+                
+                try {
+                    const response = await fetch(`${VERCEL_APP_URL}/api/analyze`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            type: 'exercise',
+                            data: { totalCalories },
+                            userProfile: { gender, age, weight, activity }
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`API error: ${response.status} - ${errorData.error || 'Unknown error'}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (!data.home || !data.outdoor || !data.gym) {
+                        throw new Error('Invalid exercise plan format from API');
+                    }
+                    
+                    console.log('✅ AI exercise plan received');
+                    return data;
+                    
+                } catch (error) {
+                    console.error('❌ AI exercise planning failed:', error);
+                    throw error;
+                }
+            }
+
+            async function addFoodItem() {
+                const name = elements.foodInput.value.trim();
+                const qty = parseFloat(elements.qtyInput.value) || 0;
+                const unit = elements.unitSelect.value;
+                
+                if(!name || qty <= 0){ 
+                    showMessage('Please enter a food name and quantity', 'error');
+                    return; 
+                }
+                
+                // Custom calorie override
+                if(unit === 'custom') {
+                    const customKcal = parseFloat(elements.customKcal.value) || 0;
+                    if(customKcal <= 0) {
+                        showMessage('Please enter custom calories', 'error');
+                        return;
+                    }
+                    items.push({ name, qty, unit, kcal: customKcal * qty });
+                    renderList();
+                    resetForm();
+                    showMessage('Custom calorie item added!', 'success');
+                    return;
+                }
+                
+                // Show AI loading state
+                elements.addBtn.innerHTML = '<div class="loading"></div> AI Calculating...';
+                elements.addBtn.disabled = true;
+                
+                try {
+                    const kcal = await calculateCaloriesWithAI(name, qty, unit);
+                    items.push({ name, qty, unit, kcal });
+                    renderList();
+                    resetForm();
+                    showMessage(`✅ AI calculated: ${Math.round(kcal)} calories for ${name}`, 'success');
+                    
+                } catch (error) {
+                    console.error('AI calculation failed:', error);
+                    showMessage(`❌ AI calculation failed: ${error.message}`, 'error');
+                } finally {
+                    elements.addBtn.innerHTML = 'Add Item';
+                    elements.addBtn.disabled = false;
+                }
+            }
+
+            function resetForm() {
+                elements.foodInput.value = '';
+                elements.qtyInput.value = '1';
+                elements.unitSelect.value = 'g';
+                elements.customKcalRow.style.display = 'none';
+                elements.customKcal.value = '';
+            }
+
+            function handleFoodActions(e){
+                if(e.target.matches('.remove-item')){
+                    const idx = parseInt(e.target.dataset.idx);
+                    items.splice(idx,1);
+                    renderList();
+                    showMessage('Item removed', 'info');
+                }
+            }
+
+            function clearAll() {
+                if(items.length === 0 && (!elements.resultsArea.style.display || elements.resultsArea.style.display === 'none')) {
+                    return;
+                }
+                
+                if(confirm('Clear all food items and results?')){
+                    items = [];
+                    renderList();
+                    elements.resultsArea.style.display = 'none';
+                    showMessage('All items cleared', 'info');
+                }
+            }
+
+            async function calculateExercise() {
+                if(items.length === 0){ 
+                    showMessage('Please add at least one food item', 'error');
+                    return; 
+                }
+                
+                const total = items.reduce((s, i) => s + i.kcal, 0);
+                const gender = document.getElementById('gender').value;
+                const age = parseInt(document.getElementById('age').value) || 30;
+                const weight = parseInt(document.getElementById('weight').value) || 70;
+                const activity = document.getElementById('activity').value;
+                
+                elements.calcBtn.innerHTML = '<div class="loading"></div> AI Planning...';
+                elements.calcBtn.disabled = true;
+                
+                try {
+                    const exercisePlan = await getAIExercisePlan(total, gender, age, weight, activity);
+                    renderAIExercises(exercisePlan, total);
+                    elements.resultsArea.style.display = 'block';
+                    elements.resultsArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    showMessage('✅ AI exercise plan generated!', 'success');
+                } catch (error) {
+                    console.error('AI exercise planning failed:', error);
+                    showMessage(`❌ AI exercise planning failed: ${error.message}`, 'error');
+                } finally {
+                    elements.calcBtn.innerHTML = 'Calculate Exercise <span class="ai-badge">AI</span>';
+                    elements.calcBtn.disabled = false;
+                }
+            }
+
+            function renderAIExercises(exercisePlan, total) {
+                // Clear previous results
+                elements.homeExercises.innerHTML = '';
+                elements.outdoorExercises.innerHTML = '';
+                elements.gymExercises.innerHTML = '';
+                
+                elements.resultHeader.innerText = `Total Calories: ${Math.round(total)} kcal - AI Personalized Plan`;
+                
+                // Render Home Exercises
+                if (exercisePlan.home && Array.isArray(exercisePlan.home)) {
+                    exercisePlan.home.forEach(item => {
+                        const exerciseDiv = document.createElement('div');
+                        exerciseDiv.className = 'ex-item';
+                        exerciseDiv.innerHTML = `
+                            <div>
+                                <strong>${item.name || 'Home Exercise'}</strong>
+                                <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+                                    ${item.instructions || 'Follow standard form and technique'}
+                                    ${item.difficulty ? `<br><strong>Level:</strong> ${item.difficulty}` : ''}
+                                </div>
+                            </div>
+                            <div>${item.duration || '30 min'} • ~${item.calories || '150'} kcal</div>
+                        `;
+                        elements.homeExercises.appendChild(exerciseDiv);
+                    });
+                }
+                
+                // Render Outdoor Exercises
+                if (exercisePlan.outdoor && Array.isArray(exercisePlan.outdoor)) {
+                    exercisePlan.outdoor.forEach(item => {
+                        const exerciseDiv = document.createElement('div');
+                        exerciseDiv.className = 'ex-item';
+                        exerciseDiv.innerHTML = `
+                            <div>
+                                <strong>${item.name || 'Outdoor Exercise'}</strong>
+                                <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+                                    ${item.instructions || 'Follow standard form and technique'}
+                                    ${item.difficulty ? `<br><strong>Level:</strong> ${item.difficulty}` : ''}
+                                </div>
+                            </div>
+                            <div>${item.duration || '30 min'} • ~${item.calories || '150'} kcal</div>
+                        `;
+                        elements.outdoorExercises.appendChild(exerciseDiv);
+                    });
+                }
+                
+                // Render Gym Exercises
+                if (exercisePlan.gym && Array.isArray(exercisePlan.gym)) {
+                    exercisePlan.gym.forEach(item => {
+                        const exerciseDiv = document.createElement('div');
+                        exerciseDiv.className = 'ex-item';
+                        exerciseDiv.innerHTML = `
+                            <div>
+                                <strong>${item.name || 'Gym Exercise'}</strong>
+                                <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">
+                                    ${item.instructions || 'Follow standard form and technique'}
+                                    ${item.difficulty ? `<br><strong>Level:</strong> ${item.difficulty}` : ''}
+                                </div>
+                            </div>
+                            <div>${item.duration || '30 min'} • ~${item.calories || '150'} kcal</div>
+                        `;
+                        elements.gymExercises.appendChild(exerciseDiv);
+                    });
+                }
+            }
+
+            function handleFoodInputKeydown(e) {
+                if(e.key === 'Enter'){ 
+                    e.preventDefault(); 
+                    elements.addBtn.click(); 
+                }
+            }
+
+            function renderList(){
+                elements.listBody.innerHTML = '';
+                const foodSection = document.getElementById('food-items-section');
+                
+                if (items.length === 0) {
+                    if (foodSection) {
+                        foodSection.style.display = 'none';
+                    }
+                    return;
+                }
+                
+                if (foodSection) {
+                    foodSection.style.display = 'block';
+                }
+                
+                items.forEach((it, idx) => {
+                    const tr = document.createElement('tr');
+                    tr.setAttribute('role', 'row');
+                    
+                    const cells = [
+                        { value: it.name, label: 'Item' },
+                        { value: it.qty, label: 'Quantity' },
+                        { value: it.unit, label: 'Unit' },
+                        { value: Math.round(it.kcal) + ' kcal', label: 'Calories' }
+                    ];
+                    
+                    cells.forEach(cell => {
+                        const td = document.createElement('td');
+                        td.setAttribute('role', 'cell');
+                        td.setAttribute('data-label', cell.label);
+                        td.textContent = cell.value;
+                        tr.appendChild(td);
+                    });
+                    
+                    const actionsCell = document.createElement('td');
+                    actionsCell.setAttribute('role', 'cell');
+                    actionsCell.setAttribute('data-label', 'Actions');
+                    actionsCell.className = 'food-actions';
+                    actionsCell.innerHTML = `<button data-idx="${idx}" class="btn ghost remove-item" aria-label="Remove ${escapeHtml(it.name)}">Remove</button>`;
+                    
+                    tr.appendChild(actionsCell);
+                    elements.listBody.appendChild(tr);
+                });
+                
+                const total = items.reduce((s,i)=>s+i.kcal,0);
+                elements.totalKcalEl.innerText = `Total: ${Math.round(total)} kcal`;
+            }
+
+            function escapeHtml(s){ 
+                return (s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); 
+            }
+
+            function showMessage(message, type = 'info') {
+                console.log(`${type}: ${message}`);
+                
+                // Create toast message
+                const toast = document.createElement('div');
+                toast.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 12px 16px;
+                    border-radius: var(--radius-md);
+                    color: white;
+                    font-weight: 500;
+                    z-index: 10000;
+                    max-width: 300px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    transition: all 0.3s ease;
+                `;
+                
+                if (type === 'error') {
+                    toast.style.background = '#dc2626';
+                } else if (type === 'success') {
+                    toast.style.background = '#16a34a';
+                } else {
+                    toast.style.background = '#ca8a04';
+                }
+                
+                toast.textContent = message;
+                document.body.appendChild(toast);
+                
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(100%)';
+                    setTimeout(() => {
+                        if (toast.parentNode) {
+                            toast.parentNode.removeChild(toast);
+                        }
+                    }, 300);
+                }, 4000);
+            }
+
+            document.addEventListener('DOMContentLoaded', initApp);
+        })();
+    </script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+export default async function handler(req, res) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Credentials', true);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
+  // Handle preflight request
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  try {
+    const { type, data, userProfile } = req.body;
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+
+    if (!GEMINI_API_KEY) {
+      return res.status(500).json({ error: 'API key not configured on server' });
+    }
+
+    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+    let prompt = '';
+
+    if (type === 'calories') {
+      const { foodName, quantity, unit } = data;
+      prompt = `Calculate total calories for this food item. Return ONLY a number, no text:
+Food: ${foodName}
+Quantity: ${quantity}
+Unit: ${unit}
+
+Examples:
+- "apple, 2 pieces" = 104
+- "chicken breast, 1 serving" = 165
+- "rice, 1 cup" = 130
+- "pizza, 2 slices" = 570
+
+Return only the total calorie number:`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+      
+      const calories = parseFloat(text.replace(/[^\d.]/g, ''));
+      
+      if (isNaN(calories)) {
+        throw new Error(`AI returned invalid number: ${text}`);
+      }
+
+      return res.json({ calories });
+
+    } else if (type === 'exercise') {
+      const { totalCalories } = data;
+      prompt = `Create a comprehensive personalized exercise plan to burn ${Math.round(totalCalories)} calories.
+
+USER PROFILE (CRITICAL - USE THESE EXACT NUMBERS):
+- Gender: ${userProfile.gender}
+- Age: ${userProfile.age}
+- Weight: ${userProfile.weight} kg (VERY IMPORTANT FOR CALORIE CALCULATIONS)
+- Activity Level: ${userProfile.activity}
+
+CALORIE BURN CALCULATIONS MUST BE WEIGHT-ADJUSTED:
+- Heavier individuals burn more calories per exercise
+- Use metabolic equivalents (METs) adjusted for ${userProfile.weight}kg weight
+- Be realistic and practical
+
+REQUIREMENTS:
+1. Provide 6-7 exercises PER category (Home, Outdoor, Gym)
+2. Each exercise must include:
+   - Name
+   - Duration (realistic time)
+   - Calories burned (weight-adjusted calculation)
+   - Specific instructions
+   - Difficulty level
+
+3. Format as valid JSON with exactly 6-7 exercises per category:
+
+{
+    "home": [
+        {
+            "name": "Exercise Name",
+            "duration": "X min",
+            "calories": X,
+            "instructions": "Specific step-by-step instructions",
+            "difficulty": "Beginner/Intermediate/Advanced"
+        }
+    ],
+    "outdoor": [...],
+    "gym": [...]
+}
+
+Make it practical, time-efficient, and consider the user's weight of ${userProfile.weight}kg for accurate calorie calculations.`;
+
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const text = response.text();
+
+      // Extract JSON from response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON found in AI response');
+      }
+
+      const exercisePlan = JSON.parse(jsonMatch[0]);
+      return res.json(exercisePlan);
+
+    } else {
+      return res.status(400).json({ error: 'Invalid request type' });
+    }
+
+  } catch (error) {
+    console.error('API Error:', error);
+    return res.status(500).json({ 
+      error: 'AI processing failed', 
+      details: error.message 
+    });
+  }
+}
