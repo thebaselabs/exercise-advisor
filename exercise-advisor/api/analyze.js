@@ -61,16 +61,16 @@ Return only the total calorie number:`;
       
       // Map activity levels to exercise intensity
       const activityLevelInstructions = {
-        'sedentary': 'Use only VERY EASY, beginner-friendly exercises. Focus on walking, gentle stretching, light movements. Maximum 3-4 exercises total.',
-        'light': 'Use low to moderate intensity exercises. Suitable for beginners with some activity. 4-5 exercises total.',
-        'moderate': 'Use moderate intensity exercises. Mix of cardio and strength. 5-6 exercises total.',
-        'active': 'Use challenging, high-intensity exercises. Include advanced movements. 6-7 exercises total.',
-        'athlete': 'Use professional, high-intensity advanced exercises. Maximum challenge. 7-8 exercises total.'
+        'sedentary': 'Use only VERY EASY, beginner-friendly exercises. Focus on walking, gentle stretching, light movements. Each exercise should be low intensity.',
+        'light': 'Use low to moderate intensity exercises. Suitable for beginners with some activity.',
+        'moderate': 'Use moderate intensity exercises. Mix of cardio and strength.',
+        'active': 'Use challenging, high-intensity exercises. Include advanced movements.',
+        'athlete': 'Use professional, high-intensity advanced exercises. Maximum challenge.'
       };
 
       const intensityGuide = activityLevelInstructions[userProfile.activity.toLowerCase()] || activityLevelInstructions.moderate;
 
-      prompt = `Create a COMPLETE exercise plan that will burn EXACTLY ${Math.round(totalCalories)} calories in total when ALL exercises are completed.
+      prompt = `Create comprehensive exercise plans to burn approximately ${Math.round(totalCalories)} calories.
 
 USER PROFILE:
 - Gender: ${userProfile.gender}
@@ -80,46 +80,45 @@ USER PROFILE:
 
 CRITICAL REQUIREMENTS:
 
-1. CUMULATIVE CALORIE TARGET:
-   - The SUM of calories from ALL exercises must equal ${Math.round(totalCalories)} kcal
-   - Adjust exercise durations to reach this exact total
-   - Do NOT exceed the target calories
+1. EXERCISE STRUCTURE:
+   - Provide 7-8 exercises PER category (Home, Outdoor, Gym)
+   - EACH exercise should burn approximately ${Math.round(totalCalories)} calories
+   - Calories can vary slightly (±20 calories) around the target
+   - Each exercise is a COMPLETE standalone workout
 
 2. ACTIVITY LEVEL ADJUSTMENT:
    ${intensityGuide}
    - Exercise selection MUST match the user's activity level
-   - Sedentary: Only gentle, easy exercises
-   - Athlete: Advanced, high-intensity exercises
+   - Adjust durations and intensities accordingly
 
-3. EXERCISE STRUCTURE:
-   - Provide 3-8 exercises total (based on activity level above)
-   - Each exercise must include:
-     - name
-     - duration (in minutes)
-     - calories (weight-adjusted for ${userProfile.weight}kg)
-     - instructions
-     - difficulty
+3. EXERCISE DETAILS:
+   Each exercise must include:
+   - name
+   - duration (realistic time to burn ~${Math.round(totalCalories)} calories)
+   - calories (approximately ${Math.round(totalCalories)}, weight-adjusted for ${userProfile.weight}kg)
+   - instructions
+   - difficulty
 
 4. FORMAT as valid JSON:
 {
-  "total_calories_target": ${Math.round(totalCalories)},
-  "estimated_total_calories_burned": ${Math.round(totalCalories)},
-  "exercises": [
+  "home": [
     {
       "name": "Exercise Name",
       "duration": "X min",
-      "calories": Y,
+      "calories": ${Math.round(totalCalories)},
       "instructions": "Step-by-step instructions",
       "difficulty": "Beginner/Intermediate/Advanced"
     }
-  ]
+  ],
+  "outdoor": [...],
+  "gym": [...]
 }
 
 CALCULATION NOTES:
 - Use MET (Metabolic Equivalent) values adjusted for ${userProfile.weight}kg
-- Ensure the SUM of all exercise calories = ${Math.round(totalCalories)}
-- Be realistic with durations and intensity
-- Consider the user's activity level for appropriate exercise selection`;
+- Each exercise duration should be realistic to burn ~${Math.round(totalCalories)} calories
+- Consider the user's activity level for appropriate exercise selection
+- Ensure variety in each category`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -132,16 +131,6 @@ CALCULATION NOTES:
       }
 
       const exercisePlan = JSON.parse(jsonMatch[0]);
-      
-      // Validate total calories
-      const calculatedTotal = exercisePlan.exercises.reduce((sum, exercise) => sum + exercise.calories, 0);
-      const target = Math.round(totalCalories);
-      
-      // Allow small variance (±10 calories)
-      if (Math.abs(calculatedTotal - target) > 10) {
-        console.warn(`Calorie mismatch: Target ${target}, Calculated ${calculatedTotal}`);
-      }
-
       return res.json(exercisePlan);
 
     } else {
