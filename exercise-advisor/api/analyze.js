@@ -59,16 +59,41 @@ Return only the total calorie number:`;
     } else if (type === 'exercise') {
       const { totalCalories } = data;
       
-      // Map activity levels to exercise intensity
-      const activityLevelInstructions = {
-        'sedentary': 'Use only VERY EASY, beginner-friendly exercises. Focus on walking, gentle stretching, light movements. Each exercise should be low intensity.',
-        'light': 'Use low to moderate intensity exercises. Suitable for beginners with some activity.',
-        'moderate': 'Use moderate intensity exercises. Mix of cardio and strength.',
-        'active': 'Use challenging, high-intensity exercises. Include advanced movements.',
-        'athlete': 'Use professional, high-intensity advanced exercises. Maximum challenge.'
+      // Activity level based intensity mapping
+      const intensityMap = {
+        'sedentary': {
+          intensity: 'LOW',
+          duration: '25-30 minutes',
+          exercises: 'walking, light aerobics, gentle yoga, stretching, chair exercises',
+          description: 'Very gentle, beginner-friendly exercises'
+        },
+        'light': {
+          intensity: 'LOW-MODERATE', 
+          duration: '24-28 minutes',
+          exercises: 'brisk walking, light circuits, beginner intervals',
+          description: 'Gentle exercises with slightly increased intensity'
+        },
+        'moderate': {
+          intensity: 'MODERATE',
+          duration: '22-26 minutes',
+          exercises: 'HIIT, circuit training, jogging intervals, power yoga',
+          description: 'Moderate intensity with good variety'
+        },
+        'active': {
+          intensity: 'MODERATE-HIGH',
+          duration: '20-24 minutes',
+          exercises: 'running intervals, advanced circuits, sports drills',
+          description: 'Challenging workouts for active individuals'
+        },
+        'athlete': {
+          intensity: 'HIGH',
+          duration: '18-22 minutes',
+          exercises: 'sprint intervals, plyometrics, advanced calisthenics',
+          description: 'High-intensity professional level exercises'
+        }
       };
 
-      const intensityGuide = activityLevelInstructions[userProfile.activity.toLowerCase()] || activityLevelInstructions.moderate;
+      const userIntensity = intensityMap[userProfile.activity.toLowerCase()] || intensityMap.moderate;
 
       prompt = `Create comprehensive exercise plans to burn approximately ${Math.round(totalCalories)} calories.
 
@@ -76,25 +101,27 @@ USER PROFILE:
 - Gender: ${userProfile.gender}
 - Age: ${userProfile.age}
 - Weight: ${userProfile.weight} kg
-- Activity Level: ${userProfile.activity}
+- Activity Level: ${userProfile.activity} (${userIntensity.description})
 
 CRITICAL REQUIREMENTS:
 
 1. EXERCISE STRUCTURE:
    - Provide 7-8 exercises PER category (Home, Outdoor, Gym)
    - EACH exercise should burn approximately ${Math.round(totalCalories)} calories
+   - MAXIMUM DURATION: ${userIntensity.duration} per exercise
    - Calories can vary slightly (±20 calories) around the target
    - Each exercise is a COMPLETE standalone workout
 
 2. ACTIVITY LEVEL ADJUSTMENT:
-   ${intensityGuide}
-   - Exercise selection MUST match the user's activity level
-   - Adjust durations and intensities accordingly
+   - User is ${userProfile.activity} - use ${userIntensity.intensity} intensity
+   - Duration range: ${userIntensity.duration}
+   - Exercise types: ${userIntensity.exercises}
+   - Adjust intensity NOT duration beyond ${userIntensity.duration} limit
 
 3. EXERCISE DETAILS:
    Each exercise must include:
    - name
-   - duration (realistic time to burn ~${Math.round(totalCalories)} calories)
+   - duration (within ${userIntensity.duration} range)
    - calories (approximately ${Math.round(totalCalories)}, weight-adjusted for ${userProfile.weight}kg)
    - instructions
    - difficulty
@@ -115,10 +142,10 @@ CRITICAL REQUIREMENTS:
 }
 
 CALCULATION NOTES:
-- Use MET (Metabolic Equivalent) values adjusted for ${userProfile.weight}kg
-- Each exercise duration should be realistic to burn ~${Math.round(totalCalories)} calories
-- Consider the user's activity level for appropriate exercise selection
-- Ensure variety in each category`;
+- Use MET values adjusted for ${userProfile.weight}kg
+- MAX duration: ${userIntensity.duration} - do NOT exceed this
+- ${userIntensity.intensity} intensity for ${userProfile.activity} user
+- Ensure realistic, achievable workouts`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
