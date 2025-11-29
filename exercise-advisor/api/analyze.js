@@ -118,6 +118,7 @@ async function generateExercisePlan(totalCalories, userProfile) {
 
     For each exercise include:
     - name: String
+    - emoji: String (ONE relevant emoji that represents this specific exercise)
     - duration: String (realistic time: 30-75 minutes)
     - calories: Number (realistic burn rate, NOT exactly ${totalCalories})
     - instructions: String (brief how-to, 2-3 lines)
@@ -249,3 +250,4 @@ function getFallbackExercisePlan(totalCalories, userProfile) {
     ]
   };
 }
+
