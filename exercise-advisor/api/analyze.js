@@ -75,7 +75,7 @@ async function calculateCaloriesWithAI(foodName, quantity, unit) {
     // Extract JSON from response
     const jsonMatch = calculationText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+    return ensureEmojis(JSON.parse(jsonMatch[0]));
     }
   } catch (error) {
     console.error('AI calculation failed:', error);
@@ -249,6 +249,22 @@ function getFallbackExercisePlan(totalCalories, userProfile) {
       }
     ]
   };
+}
+// ADD THIS AT THE VERY END OF THE FILE
+
+function ensureEmojis(exercisePlan) {
+    const defaultEmojis = { home: '💪', outdoor: '🏃‍♂️', gym: '🏋️' };
+    
+    ['home', 'outdoor', 'gym'].forEach(category => {
+        if (exercisePlan[category]) {
+            exercisePlan[category].forEach(exercise => {
+                if (!exercise.emoji) {
+                    exercise.emoji = defaultEmojis[category];
+                }
+            });
+        }
+    });
+    return exercisePlan;
 }
 
 
