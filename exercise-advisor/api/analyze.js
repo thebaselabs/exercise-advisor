@@ -69,13 +69,7 @@ Return ONLY valid JSON:
       // Extract JSON from response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        // FALLBACK SYSTEM: Basic calculation if AI fails
-        const fallbackCalories = await getFallbackCalories(foodName, quantity, unit);
-        return res.json({ 
-          calories: fallbackCalories, 
-          confidence: "low",
-          details: "Used fallback calculation"
-        });
+        throw new Error('AI returned invalid response format');
       }
 
       const calorieData = JSON.parse(jsonMatch[0]);
@@ -168,9 +162,7 @@ Each exercise: {
       // Extract JSON from response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        // FALLBACK SYSTEM: Basic exercise plan if AI fails
-        const fallbackPlan = getFallbackExercisePlan(totalCalories, userProfile);
-        return res.json(fallbackPlan);
+        throw new Error('AI returned invalid exercise plan format');
       }
 
       const exercisePlan = JSON.parse(jsonMatch[0]);
@@ -185,67 +177,11 @@ Each exercise: {
 
   } catch (error) {
     console.error('API Error:', error);
-    // FALLBACK SYSTEM: Return basic error with fallback options
-    return res.status(500).json({ 
-      error: 'AI processing failed', 
-      details: error.message,
-      fallbackAvailable: true
-    });
+    throw error; // Let the error propagate - NO FALLBACKS
   }
 }
 
-// FALLBACK SYSTEMS
-async function getFallbackCalories(foodName, quantity, unit) {
-  const commonFoods = {
-    'apple': 95, 'banana': 105, 'orange': 62, 'chicken': 165,
-    'egg': 78, 'bread': 79, 'milk': 149, 'rice': 130, 'pasta': 158
-  };
-
-  const cleanName = foodName.toLowerCase().trim();
-  for (const [food, calories] of Object.entries(commonFoods)) {
-    if (cleanName.includes(food)) {
-      return calories * quantity;
-    }
-  }
-  
-  return 150 * quantity;
-}
-
-function getFallbackExercisePlan(totalCalories, userProfile) {
-  const baseTime = Math.max(25, Math.min(35, Math.round(totalCalories / 15)));
-  
-  return {
-    home: [
-      {
-        name: "Bodyweight Circuit",
-        duration: `${baseTime} minutes`,
-        calories: Math.round(totalCalories),
-        instructions: "Push-ups, squats, lunges, planks in circuit format",
-        difficulty: "Intermediate"
-      }
-    ],
-    outdoor: [
-      {
-        name: "Brisk Walking/Running",
-        duration: `${baseTime} minutes`,
-        calories: Math.round(totalCalories),
-        instructions: "Moderate pace walking or light running outdoors",
-        difficulty: "Beginner"
-      }
-    ],
-    gym: [
-      {
-        name: "Cardio Machine",
-        duration: `${baseTime} minutes`,
-        calories: Math.round(totalCalories),
-        instructions: "Treadmill, elliptical, or stationary bike",
-        difficulty: "Beginner"
-      }
-    ]
-  };
-}
-
-// SMART FILTERING of exercise recommendations
+// SMART FILTERING of exercise recommendations (NO FALLBACKS)
 function filterExercisesByProfile(exercisePlan, userProfile) {
   const filteredPlan = { home: [], outdoor: [], gym: [] };
   
@@ -257,11 +193,6 @@ function filterExercisesByProfile(exercisePlan, userProfile) {
           filteredPlan[category].push(exercise);
         }
       });
-      
-      // Ensure we have at least one exercise per category
-      if (filteredPlan[category].length === 0 && exercisePlan[category].length > 0) {
-        filteredPlan[category].push(exercisePlan[category][0]);
-      }
     }
   });
   
