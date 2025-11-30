@@ -31,35 +31,60 @@ export default async function handler(req, res) {
 
     if (type === 'calories') {
       const { foodName, quantity, unit } = data;
-      prompt = `Calculate total calories for this food item. Return ONLY a number, no text:
-Food: ${foodName}
-Quantity: ${quantity}
-Unit: ${unit}
+      
+      // MULTI-STEP AI ANALYSIS with CONFIDENCE SCORING
+      prompt = `Analyze this food and calculate calories with accuracy assessment:
 
-Examples:
-- "apple, 2 pieces" = 104
-- "chicken breast, 1 serving" = 165
-- "rice, 1 cup" = 130
-- "pizza, 2 slices" = 570
+FOOD: "${foodName}"
+QUANTITY: ${quantity} ${unit}
 
-Return only the total calorie number:`;
+STEP 1 - FOOD ANALYSIS:
+- Identify main ingredients
+- Detect cooking method (fried, grilled, baked, raw, etc.)
+- Note any sauces, oils, or additions
+- Estimate portion size/weight
+
+STEP 2 - CALORIE CALCULATION:
+- Use USDA standard food database values
+- Apply cooking method adjustments
+- Consider portion size realism
+- Use MET values where applicable
+
+STEP 3 - CONFIDENCE ASSESSMENT:
+- "high": Basic single foods (apple, chicken breast) - 95%+ accurate
+- "medium": Common dishes with clear ingredients - 80% accurate
+- "low": Complex/regional dishes - 60% accurate
+
+Return ONLY valid JSON:
+{
+  "calories": number,
+  "confidence": "high/medium/low",
+  "details": "brief explanation"
+}`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const text = response.text();
-      
-      const calories = parseFloat(text.replace(/[^\d.]/g, ''));
-      
-      if (isNaN(calories)) {
-        throw new Error(`AI returned invalid number: ${text}`);
+
+      // Extract JSON from response
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        // FALLBACK SYSTEM: Basic calculation if AI fails
+        const fallbackCalories = await getFallbackCalories(foodName, quantity, unit);
+        return res.json({ 
+          calories: fallbackCalories, 
+          confidence: "low",
+          details: "Used fallback calculation"
+        });
       }
 
-      return res.json({ calories });
+      const calorieData = JSON.parse(jsonMatch[0]);
+      return res.json(calorieData);
 
     } else if (type === 'exercise') {
       const { totalCalories } = data;
       
-      // Activity level based intensity mapping
+      // PERSONALIZED EXERCISE PLANNING with SMART FILTERING
       const intensityMap = {
         'sedentary': {
           intensity: 'LOW',
@@ -95,57 +120,46 @@ Return only the total calorie number:`;
 
       const userIntensity = intensityMap[userProfile.activity.toLowerCase()] || intensityMap.moderate;
 
-      prompt = `Create comprehensive exercise plans to burn approximately ${Math.round(totalCalories)} calories.
+      // REALISTIC CALORIE CALCULATIONS using MET values
+      prompt = `Create PERSONALIZED exercise plans using MET values and user profile.
 
-USER PROFILE:
+USER PROFILE FOR PERSONALIZATION:
+- Age: ${userProfile.age} years (${userProfile.age < 30 ? "young" : userProfile.age > 50 ? "senior" : "adult"})
+- Weight: ${userProfile.weight} kg (${userProfile.weight > 90 ? "heavy" : userProfile.weight < 60 ? "light" : "average"})
 - Gender: ${userProfile.gender}
-- Age: ${userProfile.age}
-- Weight: ${userProfile.weight} kg
-- Activity Level: ${userProfile.activity} (${userIntensity.description})
+- Activity: ${userProfile.activity} (${userIntensity.description})
 
-CRITICAL REQUIREMENTS:
+PERSONALIZATION RULES:
+- Age-based: ${userProfile.age < 18 ? "youth-friendly" : userProfile.age > 65 ? "senior-safe" : "all-levels"}
+- Weight-based: ${userProfile.weight > 90 ? "low-impact" : "standard-intensity"}
+- Activity-based: ${userIntensity.intensity} intensity
 
-1. EXERCISE STRUCTURE:
-   - Provide 7-8 exercises PER category (Home, Outdoor, Gym)
-   - EACH exercise should burn approximately ${Math.round(totalCalories)} calories
-   - MAXIMUM DURATION: ${userIntensity.duration} per exercise
-   - Calories can vary slightly (±20 calories) around the target
-   - Each exercise is a COMPLETE standalone workout
+MET-BASED CALORIE CALCULATIONS:
+- Target: ${Math.round(totalCalories)} calories
+- User weight: ${userProfile.weight}kg
+- Use realistic MET values for each exercise type
+- Adjust for user's ${userIntensity.intensity} intensity level
 
-2. ACTIVITY LEVEL ADJUSTMENT:
-   - User is ${userProfile.activity} - use ${userIntensity.intensity} intensity
-   - Duration range: ${userIntensity.duration}
-   - Exercise types: ${userIntensity.exercises}
-   - Adjust intensity NOT duration beyond ${userIntensity.duration} limit
+EXERCISE REQUIREMENTS with SMART FILTERING:
+- Provide 3 BEST exercises per category (Home, Outdoor, Gym)
+- SMART FILTER: Remove exercises unsuitable for user profile
+- Each exercise burns ~${Math.round(totalCalories)} calories
+- Duration: ${userIntensity.duration} maximum
+- Include age-appropriate, weight-appropriate exercises
 
-3. EXERCISE DETAILS:
-   Each exercise must include:
-   - name
-   - duration (within ${userIntensity.duration} range)
-   - calories (approximately ${Math.round(totalCalories)}, weight-adjusted for ${userProfile.weight}kg)
-   - instructions
-   - difficulty
-
-4. FORMAT as valid JSON:
-{
-  "home": [
-    {
-      "name": "Exercise Name",
-      "duration": "X min",
-      "calories": ${Math.round(totalCalories)},
-      "instructions": "Step-by-step instructions",
-      "difficulty": "Beginner/Intermediate/Advanced"
-    }
-  ],
-  "outdoor": [...],
-  "gym": [...]
+Return valid JSON: { 
+  "home": Array[3], 
+  "outdoor": Array[3], 
+  "gym": Array[3] 
 }
 
-CALCULATION NOTES:
-- Use MET values adjusted for ${userProfile.weight}kg
-- MAX duration: ${userIntensity.duration} - do NOT exceed this
-- ${userIntensity.intensity} intensity for ${userProfile.activity} user
-- Ensure realistic, achievable workouts`;
+Each exercise: { 
+  "name": "string", 
+  "duration": "string", 
+  "calories": number, 
+  "instructions": "string", 
+  "difficulty": "string" 
+}`;
 
       const result = await model.generateContent(prompt);
       const response = await result.response;
@@ -154,11 +168,16 @@ CALCULATION NOTES:
       // Extract JSON from response
       const jsonMatch = text.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        throw new Error('No JSON found in AI response');
+        // FALLBACK SYSTEM: Basic exercise plan if AI fails
+        const fallbackPlan = getFallbackExercisePlan(totalCalories, userProfile);
+        return res.json(fallbackPlan);
       }
 
       const exercisePlan = JSON.parse(jsonMatch[0]);
-      return res.json(exercisePlan);
+      
+      // SMART FILTERING: Ensure exercises are appropriate
+      const filteredPlan = filterExercisesByProfile(exercisePlan, userProfile);
+      return res.json(filteredPlan);
 
     } else {
       return res.status(400).json({ error: 'Invalid request type' });
@@ -166,9 +185,114 @@ CALCULATION NOTES:
 
   } catch (error) {
     console.error('API Error:', error);
+    // FALLBACK SYSTEM: Return basic error with fallback options
     return res.status(500).json({ 
       error: 'AI processing failed', 
-      details: error.message 
+      details: error.message,
+      fallbackAvailable: true
     });
   }
+}
+
+// FALLBACK SYSTEMS
+async function getFallbackCalories(foodName, quantity, unit) {
+  const commonFoods = {
+    'apple': 95, 'banana': 105, 'orange': 62, 'chicken': 165,
+    'egg': 78, 'bread': 79, 'milk': 149, 'rice': 130, 'pasta': 158
+  };
+
+  const cleanName = foodName.toLowerCase().trim();
+  for (const [food, calories] of Object.entries(commonFoods)) {
+    if (cleanName.includes(food)) {
+      return calories * quantity;
+    }
+  }
+  
+  return 150 * quantity;
+}
+
+function getFallbackExercisePlan(totalCalories, userProfile) {
+  const baseTime = Math.max(25, Math.min(35, Math.round(totalCalories / 15)));
+  
+  return {
+    home: [
+      {
+        name: "Bodyweight Circuit",
+        duration: `${baseTime} minutes`,
+        calories: Math.round(totalCalories),
+        instructions: "Push-ups, squats, lunges, planks in circuit format",
+        difficulty: "Intermediate"
+      }
+    ],
+    outdoor: [
+      {
+        name: "Brisk Walking/Running",
+        duration: `${baseTime} minutes`,
+        calories: Math.round(totalCalories),
+        instructions: "Moderate pace walking or light running outdoors",
+        difficulty: "Beginner"
+      }
+    ],
+    gym: [
+      {
+        name: "Cardio Machine",
+        duration: `${baseTime} minutes`,
+        calories: Math.round(totalCalories),
+        instructions: "Treadmill, elliptical, or stationary bike",
+        difficulty: "Beginner"
+      }
+    ]
+  };
+}
+
+// SMART FILTERING of exercise recommendations
+function filterExercisesByProfile(exercisePlan, userProfile) {
+  const filteredPlan = { home: [], outdoor: [], gym: [] };
+  
+  ['home', 'outdoor', 'gym'].forEach(category => {
+    if (exercisePlan[category]) {
+      exercisePlan[category].forEach(exercise => {
+        // Filter out exercises unsuitable for user profile
+        if (isExerciseAppropriate(exercise, userProfile)) {
+          filteredPlan[category].push(exercise);
+        }
+      });
+      
+      // Ensure we have at least one exercise per category
+      if (filteredPlan[category].length === 0 && exercisePlan[category].length > 0) {
+        filteredPlan[category].push(exercisePlan[category][0]);
+      }
+    }
+  });
+  
+  return filteredPlan;
+}
+
+function isExerciseAppropriate(exercise, userProfile) {
+  const exerciseName = exercise.name.toLowerCase();
+  
+  // Age-based filtering
+  if (userProfile.age > 65) {
+    if (exerciseName.includes('sprint') || exerciseName.includes('plyometric') || 
+        exerciseName.includes('high impact')) {
+      return false;
+    }
+  }
+  
+  // Weight-based filtering
+  if (userProfile.weight > 100) {
+    if (exerciseName.includes('jump') || exerciseName.includes('run') || 
+        exerciseName.includes('high impact')) {
+      return false;
+    }
+  }
+  
+  // Activity level filtering
+  if (userProfile.activity === 'sedentary') {
+    if (exercise.difficulty === 'Advanced') {
+      return false;
+    }
+  }
+  
+  return true;
 }
