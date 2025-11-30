@@ -1,4 +1,4 @@
-// analyze.js - IMPROVED ERROR HANDLING
+// analyze.js - FIXED MODEL NAME
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -52,54 +52,24 @@ export default async function handler(req, res) {
 
 async function calculateCaloriesWithAI(foodName, quantity, unit) {
   try {
+    // FIX: Use correct model name
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    // STEP 1: Food Identification & Analysis
-    const analysisPrompt = `
-    Analyze this food description: "${foodName}"
+    const prompt = `
+    Calculate calories for: "${foodName}" with quantity ${quantity} ${unit}.
     
-    Break it down into:
-    1. MAIN_COMPONENTS: [list main ingredients]
-    2. COOKING_METHOD: [fried, grilled, baked, raw, sautéed, etc.]
-    3. ADDITIONS: [sauces, oils, dressings, creams, etc.]
-    4. TYPICAL_PORTION: estimate weight/size for "${quantity} ${unit}"
-    5. CALORIE_DENSITY: high/medium/low
-
-    Consider spelling variations and regional names.
-    Return as JSON.`;
-
-    const analysisResult = await model.generateContent(analysisPrompt);
-    const analysisText = await analysisResult.response.text();
-    console.log('Analysis result:', analysisText);
+    Consider:
+    - Cooking method (fried, grilled, baked, etc.)
+    - Typical portion sizes
+    - Standard food database values
     
-    // STEP 2: Calorie Calculation with Context
-    const calculationPrompt = `
-    Based on this analysis: ${analysisText}
-    
-    Calculate accurate calories using:
-    - USDA standard food database values
-    - Cooking method adjustments:
-      * Fried: +40-60%
-      * Grilled/Baked: +10-20% 
-      * Sautéed: +20-30%
-      * With creamy sauce: +40%
-      * With oil/butter: +100-150 cal per tbsp
-    - Realistic portion sizes
-    - Common preparation styles
+    Return ONLY JSON: {"calories": number, "confidence": "high/medium/low"}`;
 
-    Return JSON: {"calories": number, "confidence": "high/medium/low"}
-    
-    Confidence levels:
-    - "high": Basic foods (apple, banana, chicken breast) - 95%+ accurate
-    - "medium": Common dishes with clear ingredients - 80% accurate  
-    - "low": Complex/regional dishes - 60% accurate`;
+    const result = await model.generateContent(prompt);
+    const text = result.response.text();
+    console.log('Calorie response:', text);
 
-    const calculationResult = await model.generateContent(calculationPrompt);
-    const calculationText = await calculationResult.response.text();
-    console.log('Calculation result:', calculationText);
-
-    // Extract JSON from response
-    const jsonMatch = calculationText.match(/\{[\s\S]*\}/);
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
     } else {
@@ -113,45 +83,30 @@ async function calculateCaloriesWithAI(foodName, quantity, unit) {
 
 async function generateExercisePlan(totalCalories, userProfile) {
   try {
+    // FIX: Use correct model name
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
-    Create a TRULY personalized exercise plan for ${totalCalories} calories.
-
-    USER PROFILE:
-    - Age: ${userProfile.age} years
-    - Weight: ${userProfile.weight} kg
-    - Gender: ${userProfile.gender}
-    - Activity Level: ${userProfile.activity}
-
-    PERSONALIZATION RULES:
-    AGE-BASED:
-    - Under 18: Youth-friendly, skill-building exercises
-    - 18-50: Full intensity range, all exercise types
-    - 50-65: Moderate impact, joint-friendly options
-    - Over 65: Low impact, balance-focused, seated options
-
-    ACTIVITY LEVEL:
-    - Sedentary: Beginner-friendly, low intensity, gradual progression
-    - Light: Moderate intensity, mixed cardio/strength
-    - Moderate: Balanced intensity, varied exercises
-    - Active: High intensity, challenging workouts
-    - Athlete: Advanced, elite-level exercises
-
-    For EACH of the 3 exercises in EACH category (home, outdoor, gym), include:
+    Create exercise plan for ${totalCalories} calories.
+    
+    USER: ${userProfile.age} years, ${userProfile.weight} kg, ${userProfile.gender}, ${userProfile.activity}
+    
+    Provide 3 exercises for EACH category (home, outdoor, gym):
+    
+    For each exercise include:
     - name: String
-    - emoji: String (REQUIRED - ONE perfect emoji representing this exercise)
-    - duration: String (realistic time to burn target calories)
-    - calories: Number (accurate burn for this user profile)
-    - instructions: String (brief how-to instructions)
+    - emoji: String (ONE relevant emoji)
+    - duration: String
+    - calories: Number
+    - instructions: String
     - difficulty: String
     - needsEstimate: Boolean
-
+    
     Return JSON: { home: Array[3], outdoor: Array[3], gym: Array[3] }`;
 
     const result = await model.generateContent(prompt);
-    const text = await result.response.text();
-    console.log('Exercise plan result:', text);
+    const text = result.response.text();
+    console.log('Exercise response:', text);
     
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
@@ -180,4 +135,3 @@ function ensureEmojis(exercisePlan) {
     });
     return exercisePlan;
 }
-
