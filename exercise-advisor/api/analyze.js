@@ -52,7 +52,7 @@ export default async function handler(req, res) {
 
 async function calculateCaloriesWithAI(foodName, quantity, unit) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     // STEP 1: Food Identification & Analysis
     const analysisPrompt = `
@@ -113,7 +113,7 @@ async function calculateCaloriesWithAI(foodName, quantity, unit) {
 
 async function generateExercisePlan(totalCalories, userProfile) {
   try {
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `
     Create a TRULY personalized exercise plan for ${totalCalories} calories.
@@ -180,3 +180,4 @@ function ensureEmojis(exercisePlan) {
     });
     return exercisePlan;
 }
+
