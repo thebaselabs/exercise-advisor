@@ -75,7 +75,7 @@ async function calculateCaloriesWithAI(foodName, quantity, unit) {
     // Extract JSON from response
     const jsonMatch = calculationText.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-    return ensureEmojis(JSON.parse(jsonMatch[0]));
+      return JSON.parse(jsonMatch[0]);
     }
   } catch (error) {
     console.error('AI calculation failed:', error);
@@ -91,58 +91,80 @@ async function generateExercisePlan(totalCalories, userProfile) {
 
   try {
     const prompt = `
-    Create a personalized exercise plan for ${totalCalories} calories.
+    Create a TRULY personalized exercise plan for ${totalCalories} calories.
 
     USER PROFILE:
+    - Age: ${userProfile.age} years
+    - Weight: ${userProfile.weight} kg
     - Gender: ${userProfile.gender}
-    - Age: ${userProfile.age}
-    - Weight: ${userProfile.weight} kg  
     - Activity Level: ${userProfile.activity}
 
-    Provide exactly 3 best exercises for EACH category:
+    PERSONALIZATION RULES:
+    AGE-BASED:
+    - Under 18: Youth-friendly, skill-building exercises
+    - 18-50: Full intensity range, all exercise types
+    - 50-65: Moderate impact, joint-friendly options
+    - Over 65: Low impact, balance-focused, seated options
 
-    HOME (no equipment):
-    - Most effective bodyweight exercises
-    - Suitable for ${userProfile.activity} activity level
-    - Time-efficient and practical
+    ACTIVITY LEVEL:
+    - Sedentary: Beginner-friendly, low intensity, gradual progression
+    - Light: Moderate intensity, mixed cardio/strength
+    - Moderate: Balanced intensity, varied exercises
+    - Active: High intensity, challenging workouts
+    - Athlete: Advanced, elite-level exercises
 
-    OUTDOOR:
-    - Best outdoor cardio options  
-    - Consider ${userProfile.age} years old
-    - Realistic for ${userProfile.weight} kg person
+    WEIGHT CONSIDERATIONS:
+    - Under 60kg: Focus on endurance, bodyweight exercises
+    - 60-90kg: Balanced strength and cardio
+    - Over 90kg: Low-impact, joint-friendly, strength-focused
 
-    GYM (equipment required):
-    - Optimal gym machine exercises
-    - Safe for user profile
-    - Maximum calorie burn efficiency
+    GENDER-SPECIFIC:
+    - Male: Typically higher muscle mass - include strength training
+    - Female: Bone density focus - include weight-bearing exercises
+    - Other: Balanced approach based on other factors
 
-    For each exercise include:
+    For EACH of the 3 exercises in EACH category (home, outdoor, gym), include:
     - name: String
-    - emoji: String (REQUIRED - ONE perfect emoji that visually represents this exercise. NEVER omit this field.)
-    - duration: String (realistic time: 30-75 minutes)
-    - calories: Number (realistic burn rate, NOT exactly ${totalCalories})
-    - instructions: String (brief how-to, 2-3 lines)
+    - emoji: String (REQUIRED - ONE perfect emoji representing this exercise)
+    - duration: String (realistic time to burn target calories)
+    - calories: Number (accurate burn for this user profile)
+    - instructions: String (brief how-to instructions)
     - difficulty: String
-    - needsEstimate: Boolean (true for variable-intensity exercises)
+    - needsEstimate: Boolean
 
-    Return JSON: {
-      home: Array[3],
-      outdoor: Array[3], 
-      gym: Array[3]
-    }`;
+    Return JSON: { home: Array[3], outdoor: Array[3], gym: Array[3] }
+
+    IMPORTANT: Exercises MUST vary significantly based on user profile. Never return the same plan for different users.`;
 
     const result = await model.generateContent(prompt);
     const text = await result.response.text();
     
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      return JSON.parse(jsonMatch[0]);
+      const exercisePlan = JSON.parse(jsonMatch[0]);
+      return ensureEmojis(exercisePlan);
     }
   } catch (error) {
     console.error('AI exercise planning failed:', error);
   }
 
   return getFallbackExercisePlan(totalCalories, userProfile);
+}
+
+// Emoji backup system
+function ensureEmojis(exercisePlan) {
+    const defaultEmojis = { home: '💪', outdoor: '🏃‍♂️', gym: '🏋️' };
+    
+    ['home', 'outdoor', 'gym'].forEach(category => {
+        if (exercisePlan[category]) {
+            exercisePlan[category].forEach(exercise => {
+                if (!exercise.emoji) {
+                    exercise.emoji = defaultEmojis[category];
+                }
+            });
+        }
+    });
+    return exercisePlan;
 }
 
 // Fallback functions
@@ -169,102 +191,112 @@ async function getFallbackCalories(foodName, quantity, unit) {
 function getFallbackExercisePlan(totalCalories, userProfile) {
   const baseTime = Math.max(30, Math.min(75, Math.round(totalCalories / 10)));
   
+  // Personalize based on user profile
+  const isSenior = userProfile.age > 65;
+  const isBeginner = userProfile.activity === 'sedentary';
+  const isAthlete = userProfile.activity === 'athlete';
+  const isOverweight = userProfile.weight > 90;
+  const isYoung = userProfile.age < 25;
+
   return {
     home: [
       {
-        name: "HIIT Circuit",
-        duration: `${baseTime} minutes`,
-        calories: Math.round(totalCalories * 0.9),
-        instructions: "20s work, 10s rest. Jumping jacks, squats, push-ups, planks in circuit",
-        difficulty: "Intermediate",
+        name: isSenior ? "Chair Yoga" : isBeginner ? "Beginner Bodyweight" : "HIIT Circuit",
+        emoji: isSenior ? "🧘" : isBeginner ? "🌟" : "💥",
+        duration: `${isSenior ? baseTime + 15 : baseTime} minutes`,
+        calories: Math.round(totalCalories * (isSenior ? 0.6 : isBeginner ? 0.7 : 0.9)),
+        instructions: isSenior ? "Seated poses, gentle stretches, focus on breathing" : 
+                      isBeginner ? "3 sets of 10 reps. Squats, modified push-ups, planks" :
+                      "20s work, 10s rest. Jumping jacks, squats, push-ups, planks",
+        difficulty: isSenior ? "Beginner" : isBeginner ? "Beginner" : "Intermediate",
         needsEstimate: true
       },
       {
-        name: "Bodyweight Strength",
-        duration: `${baseTime + 10} minutes`,
-        calories: Math.round(totalCalories * 0.7),
-        instructions: "3 sets of 12 reps. Squats, lunges, push-ups, planks with 60s rest between sets",
-        difficulty: "Beginner",
-        needsEstimate: false
+        name: isSenior ? "Seated Strength" : isOverweight ? "Low-Impact Cardio" : "Jump Rope Intervals",
+        emoji: isSenior ? "💺" : isOverweight ? "🚶" : "🏃",
+        duration: `${isSenior ? baseTime + 10 : baseTime - 5} minutes`,
+        calories: Math.round(totalCalories * (isSenior ? 0.5 : isOverweight ? 0.6 : 0.95)),
+        instructions: isSenior ? "Seated leg lifts, arm circles, light resistance bands" :
+                      isOverweight ? "Marching in place, step touches, gentle movements" :
+                      "3 min jumping, 1 min rest. Alternate basic jumps and high knees",
+        difficulty: isSenior ? "Beginner" : isOverweight ? "Beginner" : "Intermediate",
+        needsEstimate: true
       },
       {
-        name: "Jump Rope Intervals",
-        duration: `${baseTime - 5} minutes`,
-        calories: Math.round(totalCalories * 0.95),
-        instructions: "3 min jumping, 1 min rest. Alternate basic jumps and high knees",
-        difficulty: "Intermediate",
-        needsEstimate: true
+        name: isAthlete ? "Advanced Calisthenics" : "Yoga Flow",
+        emoji: isAthlete ? "🏋️" : "🧘",
+        duration: `${isAthlete ? baseTime - 10 : baseTime + 10} minutes`,
+        calories: Math.round(totalCalories * (isAthlete ? 1.1 : 0.7)),
+        instructions: isAthlete ? "Muscle-ups, handstand push-ups, advanced core work" :
+                      "Sun salutations, holding poses 30-60s, focus on breath & form",
+        difficulty: isAthlete ? "Advanced" : "Beginner",
+        needsEstimate: isAthlete
       }
     ],
     outdoor: [
       {
-        name: "Running",
-        duration: `${baseTime - 5} minutes`,
-        calories: Math.round(totalCalories * 1.0),
-        instructions: "5 min warm-up, 30 min steady pace, 5 min cool-down. Focus on breathing rhythm",
-        difficulty: "Beginner",
+        name: isSenior ? "Brisk Walking" : isYoung ? "Running Intervals" : "Running",
+        emoji: isSenior ? "🚶" : "🏃‍♂️",
+        duration: `${isSenior ? baseTime + 20 : baseTime - 5} minutes`,
+        calories: Math.round(totalCalories * (isSenior ? 0.7 : 1.0)),
+        instructions: isSenior ? "Comfortable pace walking, focus on posture and breathing" :
+                      isYoung ? "1 min sprint, 2 min jog repeats for entire duration" :
+                      "5 min warm-up, 30 min steady pace, 5 min cool-down",
+        difficulty: isSenior ? "Beginner" : isYoung ? "Intermediate" : "Beginner",
         needsEstimate: false
       },
       {
-        name: "Cycling",
-        duration: `${baseTime + 15} minutes`,
-        calories: Math.round(totalCalories * 0.9),
-        instructions: "Moderate pace cycling. Include some hills for intensity variation",
+        name: isOverweight ? "Swimming" : "Cycling",
+        emoji: isOverweight ? "🏊" : "🚴",
+        duration: `${isOverweight ? baseTime : baseTime + 15} minutes`,
+        calories: Math.round(totalCalories * (isOverweight ? 0.85 : 0.9)),
+        instructions: isOverweight ? "Freestyle laps, focus on technique, low impact" :
+                      "Moderate pace cycling. Include some hills for intensity variation",
         difficulty: "Beginner",
-        needsEstimate: false
+        needsEstimate: isOverweight
       },
       {
-        name: "Swimming",
-        duration: `${baseTime} minutes`,
-        calories: Math.round(totalCalories * 0.85),
-        instructions: "Freestyle laps. 4 laps hard, 2 laps easy. Focus on technique",
-        difficulty: "Intermediate",
+        name: isBeginner ? "Nature Walk" : "Hill Sprints",
+        emoji: isBeginner ? "🌳" : "⛰️",
+        duration: `${isBeginner ? baseTime + 25 : baseTime - 15} minutes`,
+        calories: Math.round(totalCalories * (isBeginner ? 0.5 : 1.2)),
+        instructions: isBeginner ? "Leisurely walking, enjoy surroundings, gentle pace" :
+                      "Find a hill: sprint up, walk down. Repeat for duration",
+        difficulty: isBeginner ? "Beginner" : "Advanced",
         needsEstimate: true
       }
     ],
     gym: [
       {
-        name: "Stair Climber",
-        duration: `${baseTime - 10} minutes`,
-        calories: Math.round(totalCalories * 1.1),
-        instructions: "Steady pace on stair machine. Use intervals: 3 min hard, 2 min moderate",
+        name: isSenior ? "Recumbent Bike" : "Stair Climber",
+        emoji: isSenior ? "🚲" : "🪜",
+        duration: `${isSenior ? baseTime + 10 : baseTime - 10} minutes`,
+        calories: Math.round(totalCalories * (isSenior ? 0.6 : 1.1)),
+        instructions: isSenior ? "Seated cycling, comfortable resistance, focus on endurance" :
+                      "Steady pace on stair machine. Use intervals: 3 min hard, 2 min moderate",
         difficulty: "Beginner",
         needsEstimate: false
       },
       {
-        name: "Full Body Weights",
-        duration: `${baseTime + 5} minutes`,
-        calories: Math.round(totalCalories * 0.6),
-        instructions: "3 sets of 10 reps. Squats, bench press, rows, shoulder press. 60s rest between sets",
-        difficulty: "Intermediate",
+        name: isAthlete ? "CrossFit Circuit" : "Full Body Weights",
+        emoji: isAthlete ? "🔥" : "🏋️",
+        duration: `${isAthlete ? baseTime - 5 : baseTime + 5} minutes`,
+        calories: Math.round(totalCalories * (isAthlete ? 1.0 : 0.6)),
+        instructions: isAthlete ? "AMRAP: burpees, box jumps, kettlebell swings, pull-ups" :
+                      "3 sets of 10 reps. Squats, bench press, rows, shoulder press. 60s rest between sets",
+        difficulty: isAthlete ? "Advanced" : "Intermediate",
         needsEstimate: true
       },
       {
-        name: "Rowing Machine",
+        name: userProfile.gender === 'female' ? "Bone Strength Training" : "Rowing Machine",
+        emoji: userProfile.gender === 'female' ? "🦴" : "🚣",
         duration: `${baseTime} minutes`,
         calories: Math.round(totalCalories * 0.95),
-        instructions: "20 min steady rowing, 10 min intervals. Focus on full-body form",
+        instructions: userProfile.gender === 'female' ? "Weight-bearing exercises: squats, lunges, shoulder press for bone density" :
+                      "20 min steady rowing, 10 min intervals. Focus on full-body form",
         difficulty: "Beginner",
         needsEstimate: false
       }
     ]
   };
 }
-// ADD THIS AT THE VERY END OF THE FILE
-
-function ensureEmojis(exercisePlan) {
-    const defaultEmojis = { home: '💪', outdoor: '🏃‍♂️', gym: '🏋️' };
-    
-    ['home', 'outdoor', 'gym'].forEach(category => {
-        if (exercisePlan[category]) {
-            exercisePlan[category].forEach(exercise => {
-                if (!exercise.emoji) {
-                    exercise.emoji = defaultEmojis[category];
-                }
-            });
-        }
-    });
-    return exercisePlan;
-}
-
-
