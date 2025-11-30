@@ -1,10 +1,10 @@
-// analyze.js - WITH CORS FIX
+// analyze.js - UPDATED WITH CORRECT MODEL NAMES
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export default async function handler(req, res) {
-  // ADD CORS HEADERS
+  // CORS headers
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
@@ -37,9 +37,9 @@ export default async function handler(req, res) {
   }
 }
 
-// ... rest of your analyze.js code remains the same ...
 async function calculateCaloriesWithAI(foodName, quantity, unit) {
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  // UPDATED MODEL NAME
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   // STEP 1: Food Identification & Analysis
   const analysisPrompt = `
@@ -93,7 +93,8 @@ async function calculateCaloriesWithAI(foodName, quantity, unit) {
 }
 
 async function generateExercisePlan(totalCalories, userProfile) {
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+  // UPDATED MODEL NAME
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const prompt = `
   Create a TRULY personalized exercise plan for ${totalCalories} calories.
